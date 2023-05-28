@@ -4,7 +4,7 @@ CC = gcc
 CFLAGS = -g -Wall
 
 run: $(TARGET)
-	./$(TARGET)
+	./$(TARGET) $(FILE)
 
 $(TARGET): $(SOURCE)
 	$(CC) $(CFLAGS) $(SOURCE) -o $(TARGET)
