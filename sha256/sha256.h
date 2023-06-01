@@ -9,6 +9,8 @@
 #include "../modules/file_util.h"
 #include "../modules/mem_util.h"
 
+uint32_t hash[8];
+
 /**
  * @brief                   Applies FIPS 180-4 compliant padding for the message.
  *                          The caller is responsible for freeing the memory allocated for the resulting padded message.
@@ -18,5 +20,17 @@
  * @param buffer_length     The length of the padded message in bytes - passed by reference.
  */
 void sha256_padding(uint8_t* message, uint8_t** buffer, size_t message_length, size_t* buffer_length);
+
+/**
+ * @brief                   Compresses a 64 byte block of the initial message as described in FIPS 180-4.
+ * @param block             The block to be compressed.
+ */
+void sha256_compression(const uint8_t* block);
+
+/**
+ * @brief                   Prints the SHA256 digest of a given file to STDOUT.
+ * @param file_path         The path of the file to be hashed.
+ */
+void sha256(const char* file_path);
 
 #endif
