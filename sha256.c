@@ -1,10 +1,6 @@
 #include "sha256.h"
 
-uint32_t hash[8] = {
-    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
-};
-
-uint32_t round_constants[64] = {
+const uint32_t round_constants[64] = {
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
 	0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
 	0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
@@ -52,9 +48,8 @@ void sha256_padding(uint8_t* message, uint8_t** buffer, size_t message_length, s
     memcpy((*buffer), message, message_length);
 
     (*buffer)[message_length] = 0x80;
-    // Total number of zeros = total buffer length - the 64 bit (8 byte) message length.
-    total_zeros = *buffer_length - 8;
-    memset((*buffer + message_length + 1), 0x00, total_zeros - 1);
+    total_zeros = *buffer_length - 8 - message_length - 1;
+    memset((*buffer + message_length + 1), 0x00, total_zeros);
 
     bit_length = (uint64_t)message_length * 8;
     for (size_t i = 0; i < 8; i++) {
@@ -62,7 +57,7 @@ void sha256_padding(uint8_t* message, uint8_t** buffer, size_t message_length, s
     }
 }
 
-void sha256_compression(const uint8_t* block) {
+void sha256_compression(const uint8_t* block, uint32_t* hash) {
     uint32_t a = hash[0];
     uint32_t b = hash[1];
     uint32_t c = hash[2];
@@ -111,20 +106,18 @@ void sha256(const char* file_path) {
     uint8_t* padded_message = NULL;
     size_t padded_length = 0;
 
+    uint32_t hash[8] = {
+        0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+    };
+
     read_file_bytes(file_path, &message, &message_length);
-    print_string_bits(message, message_length);
     sha256_padding(message, &padded_message, message_length, &padded_length);
-    print_string_bits(padded_message, padded_length);
-    printf("\n");
 
     for (size_t i = 0; i < padded_length / 64; i++) {
-        sha256_compression(padded_message + (i * 64));
+        sha256_compression((padded_message + i * 64), hash);
     }
 
-    for (size_t i = 0; i < 8; i++) {
-        printf("%08x ", hash[i]);
-    }
-    printf("\n");
+    write_file_bytes("./output/hash.txt", hash, 8);
 
     free(message);
     free(padded_message);
