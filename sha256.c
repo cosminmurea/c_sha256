@@ -48,12 +48,12 @@ void sha256_padding(uint8_t* message, uint8_t** buffer, size_t message_length, s
     memcpy((*buffer), message, message_length);
 
     (*buffer)[message_length] = 0x80;
-    total_zeros = *buffer_length - 8 - message_length - 1;
+    total_zeros = *buffer_length - message_length - 9;
     memset((*buffer + message_length + 1), 0x00, total_zeros);
 
     bit_length = (uint64_t)message_length * 8;
     for (size_t i = 0; i < 8; i++) {
-        (*buffer)[total_zeros + i] = (uint8_t)(bit_length >> (56 - i * 8));
+        (*buffer)[*buffer_length - 8 + i] = (uint8_t)(bit_length >> (56 - i * 8));
     }
 }
 
@@ -117,7 +117,10 @@ void sha256(const char* file_path) {
         sha256_compression((padded_message + i * 64), hash);
     }
 
-    write_file_bytes("./output/hash.txt", hash, 8);
+    for (size_t i = 0; i < 8; i++) {
+        printf("%02X", hash[i]);
+    }
+    printf("\n");
 
     free(message);
     free(padded_message);
