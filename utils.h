@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 void* safe_malloc(size_t size);
 void read_file_bytes(const char* file_path, uint8_t** buffer, size_t* file_length);

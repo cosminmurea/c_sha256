@@ -14,4 +14,3 @@ $(TARGET): $(SOURCE)
 
 clean:
 	rm $(TARGET)
-	rm ./output/*.txt
