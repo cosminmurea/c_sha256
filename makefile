@@ -1,5 +1,5 @@
 SOURCE = driver.c
-TARGET = sha256
+TARGET = sha256.out
 DEPS = ./utils.c ./sha256.c
 CC = gcc
 CFLAGS = -g -Wall
