@@ -100,9 +100,7 @@ void sha256_compression(const uint8_t* block, uint32_t* hash) {
     hash[7] += h;
 }
 
-void sha256(const char* file_path) {
-    uint8_t* message = NULL;
-    size_t message_length = 0;
+void sha256(uint8_t* message, size_t message_length) {
     uint8_t* padded_message = NULL;
     size_t padded_length = 0;
 
@@ -110,7 +108,6 @@ void sha256(const char* file_path) {
         0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
     };
 
-    read_file_bytes(file_path, &message, &message_length);
     sha256_padding(message, &padded_message, message_length, &padded_length);
 
     for (size_t i = 0; i < padded_length / 64; i++) {
@@ -118,10 +115,36 @@ void sha256(const char* file_path) {
     }
 
     for (size_t i = 0; i < 8; i++) {
-        printf("%02X", hash[i]);
+        printf("%08x", hash[i]);
     }
-    printf("\n");
+    putchar('\n');
 
-    free(message);
     free(padded_message);
+}
+
+void sha256_testing(const char* test_file_path) {
+    FILE* file_ptr = safe_fopen(test_file_path, "rb");
+    char buffer[MAX_TEST_MSG_LENGTH] = {0};
+    uint8_t* hex_message = NULL;
+    size_t byte_length = 0;
+    size_t char_length = 0;
+
+    while (fgets(buffer, MAX_TEST_MSG_LENGTH, file_ptr)) {
+        char_length = atoi(buffer) / 4;
+        byte_length = char_length / 2;
+        printf("Length : \t%zu bytes.\n", byte_length);
+
+        fgets(buffer, MAX_TEST_MSG_LENGTH, file_ptr);
+        hex_message = hex_string_to_byte_array(buffer, char_length);
+        memset(buffer, 0, MAX_TEST_MSG_LENGTH);
+
+        fgets(buffer, MAX_TEST_MSG_LENGTH, file_ptr);
+        buffer[64] = 0;
+        printf("NIST Digest : \t%s\n", buffer);
+        printf("Local Digest : \t");
+        sha256(hex_message, byte_length);
+        printf("\n");
+    }
+
+    free(hex_message);
 }
