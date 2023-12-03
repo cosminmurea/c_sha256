@@ -1,5 +1,7 @@
 #include "utils.h"
 
+// Implement some loggers
+
 void* safe_malloc(size_t size) {
     void* ptr = malloc(size);
     if (ptr == NULL) {
@@ -17,30 +19,6 @@ FILE* safe_fopen(const char* file_path, const char* mode) {
     }
 
     return file_ptr;
-}
-
-size_t file_size(FILE* file_ptr) {
-    size_t file_length = 0;
-    fseek(file_ptr, 0, SEEK_END);
-    file_length = ftell(file_ptr);
-    rewind(file_ptr);
-    return file_length;
-}
-
-void read_file_bytes(const char* file_path, uint8_t** buffer, size_t* file_length) {
-    FILE* file_ptr = safe_fopen(file_path, "rb");
-    size_t bytes_read = 0;
-
-    *file_length = file_size(file_ptr);
-    *buffer = safe_malloc(*file_length * sizeof **buffer);
-
-    bytes_read = fread(*buffer, 1, *file_length, file_ptr);
-    if (bytes_read != *file_length) {
-        printf("An error occurred while trying to read from the file!!\n");
-        exit(EXIT_FAILURE);
-    }
-
-    fclose(file_ptr);
 }
 
 uint8_t* hex_string_to_byte_array(char* hex_string, size_t length) {
@@ -111,6 +89,30 @@ void write_file_bytes(const char* file_path, uint32_t* buffer, size_t buffer_len
 
     for (size_t i = 0; i < buffer_length; i++) {
         buffer[i] = convert_endianness(buffer[i]);
+    }
+
+    fclose(file_ptr);
+}
+
+size_t file_size(FILE* file_ptr) {
+    size_t file_length = 0;
+    fseek(file_ptr, 0, SEEK_END);
+    file_length = ftell(file_ptr);
+    rewind(file_ptr);
+    return file_length;
+}
+
+void read_file_bytes(const char* file_path, uint8_t** buffer, size_t* file_length) {
+    FILE* file_ptr = safe_fopen(file_path, "rb");
+    size_t bytes_read = 0;
+
+    *file_length = file_size(file_ptr);
+    *buffer = safe_malloc(*file_length * sizeof **buffer);
+
+    bytes_read = fread(*buffer, 1, *file_length, file_ptr);
+    if (bytes_read != *file_length) {
+        printf("An error occurred while trying to read from the file!!\n");
+        exit(EXIT_FAILURE);
     }
 
     fclose(file_ptr);

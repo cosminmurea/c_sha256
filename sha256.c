@@ -43,7 +43,11 @@ void sha256_padding(uint8_t* message, uint8_t** buffer, size_t message_length, s
     size_t total_zeros = 0;
     uint64_t bit_length = 0;
 
-    *buffer_length = ((message_length + 9 + 64) / 64) * 64;
+    if ((message_length + 9) % 64 == 0) {
+        *buffer_length = ((message_length + 9) / 64) * 64;
+    } else {
+        *buffer_length = ((message_length + 9 + 64) / 64) * 64;
+    }
     *buffer = safe_malloc((*buffer_length * sizeof **buffer));
     memcpy((*buffer), message, message_length);
 
@@ -117,7 +121,7 @@ void sha256(uint8_t* message, size_t message_length) {
     for (size_t i = 0; i < 8; i++) {
         printf("%08x", hash[i]);
     }
-    putchar('\n');
+    printf("\n");
 
     free(padded_message);
 }
@@ -132,7 +136,7 @@ void sha256_testing(const char* test_file_path) {
     while (fgets(buffer, MAX_TEST_MSG_LENGTH, file_ptr)) {
         char_length = atoi(buffer) / 4;
         byte_length = char_length / 2;
-        printf("Length : \t%zu bytes.\n", byte_length);
+        printf("Length : \t%zu bytes & %zu characters.\n", byte_length, char_length);
 
         fgets(buffer, MAX_TEST_MSG_LENGTH, file_ptr);
         hex_message = hex_string_to_byte_array(buffer, char_length);
