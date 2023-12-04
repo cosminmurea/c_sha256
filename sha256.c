@@ -43,18 +43,22 @@ void sha256_padding(uint8_t* message, uint8_t** buffer, size_t message_length, s
     size_t total_zeros = 0;
     uint64_t bit_length = 0;
 
+    // When the message is 9 bytes short of a block multiple there is no additional block added.
     if ((message_length + 9) % 64 == 0) {
-        *buffer_length = ((message_length + 9) / 64) * 64;
+        *buffer_length = message_length + 9;
     } else {
         *buffer_length = ((message_length + 9 + 64) / 64) * 64;
     }
     *buffer = safe_malloc((*buffer_length * sizeof **buffer));
     memcpy((*buffer), message, message_length);
 
+    // Add the 1 bit as big-endian using the byte 0x80 = 0b10000000.
     (*buffer)[message_length] = 0x80;
+    // Compute and add the needed amount of 0 bits to reach congruence modulo 512.
     total_zeros = *buffer_length - message_length - 9;
     memset((*buffer + message_length + 1), 0x00, total_zeros);
 
+    // Add the length of the message as a big-endian 64-bit value.
     bit_length = (uint64_t)message_length * 8;
     for (size_t i = 0; i < 8; i++) {
         (*buffer)[*buffer_length - 8 + i] = (uint8_t)(bit_length >> (56 - i * 8));
@@ -107,13 +111,13 @@ void sha256_compression(const uint8_t* block, uint32_t* hash) {
 void sha256(uint8_t* message, size_t message_length) {
     uint8_t* padded_message = NULL;
     size_t padded_length = 0;
-
     uint32_t hash[8] = {
         0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
     };
 
     sha256_padding(message, &padded_message, message_length, &padded_length);
 
+    // Apply the compression function on every block.
     for (size_t i = 0; i < padded_length / 64; i++) {
         sha256_compression((padded_message + i * 64), hash);
     }
@@ -128,26 +132,39 @@ void sha256(uint8_t* message, size_t message_length) {
 
 void sha256_testing(const char* test_file_path) {
     FILE* file_ptr = safe_fopen(test_file_path, "rb");
+    // The longest message in the test suite is approx. 12810 characters long => MAX_TEST_MSG_LENGTH = 13000.
     char buffer[MAX_TEST_MSG_LENGTH] = {0};
     uint8_t* hex_message = NULL;
-    size_t byte_length = 0;
-    size_t char_length = 0;
+    size_t message_length = 0;
+
+    // Skips the first 7 lines of the RSP file.
+    for (size_t i = 0; i < 7; i++) {
+        fgets(buffer, MAX_TEST_MSG_LENGTH, file_ptr);
+    }
+
+    memset(buffer, 0, MAX_TEST_MSG_LENGTH);
 
     while (fgets(buffer, MAX_TEST_MSG_LENGTH, file_ptr)) {
-        char_length = atoi(buffer) / 4;
-        byte_length = char_length / 2;
-        printf("Length : \t%zu bytes & %zu characters.\n", byte_length, char_length);
-
-        fgets(buffer, MAX_TEST_MSG_LENGTH, file_ptr);
-        hex_message = hex_string_to_byte_array(buffer, char_length);
+        // The file contains the length L in bits => hex characters = L / 4 and bytes = L / 8.
+        sscanf(buffer, "Len = %zu", &message_length);
+        printf("Length : \t%zu bytes.\n", message_length / 8);
         memset(buffer, 0, MAX_TEST_MSG_LENGTH);
 
         fgets(buffer, MAX_TEST_MSG_LENGTH, file_ptr);
-        buffer[64] = 0;
+        sscanf(buffer, "Msg = %s", buffer);
+        hex_message = hex_string_to_byte_array(buffer, message_length / 4);
+        memset(buffer, 0, MAX_TEST_MSG_LENGTH);
+
+        fgets(buffer, MAX_TEST_MSG_LENGTH, file_ptr);
+        sscanf(buffer, "MD = %s", buffer);
         printf("NIST Digest : \t%s\n", buffer);
         printf("Local Digest : \t");
-        sha256(hex_message, byte_length);
+        sha256(hex_message, message_length / 8);
         printf("\n");
+
+        // Every fourth line is empty => read and discard.
+        fgets(buffer, MAX_TEST_MSG_LENGTH, file_ptr);
+        memset(buffer, 0, MAX_TEST_MSG_LENGTH);
     }
 
     free(hex_message);

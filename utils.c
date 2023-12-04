@@ -1,7 +1,5 @@
 #include "utils.h"
 
-// Implement some loggers
-
 void* safe_malloc(size_t size) {
     void* ptr = malloc(size);
     if (ptr == NULL) {
@@ -26,6 +24,7 @@ uint8_t* hex_string_to_byte_array(char* hex_string, size_t length) {
     uint8_t* byte_array = safe_malloc((length * sizeof *byte_array) / 2);
 
     // WARNING: no sanitization or error-checking whatsoever
+    // Two string characters form one byte => "CA7B" = {0xCA, 0x7B} => the length is halved.
     for (size_t count = 0; count < length / 2; count++) {
         sscanf(ptr, "%2hhx", &byte_array[count]);
         ptr += 2;
@@ -34,66 +33,7 @@ uint8_t* hex_string_to_byte_array(char* hex_string, size_t length) {
     return byte_array;
 }
 
-/* void print_bits(uint8_t byte) {  
-    for (size_t i = 8; i > 0; i--) {
-        printf("%u", (byte >> (i - 1)) & 0x01);
-    }
-    printf(" ");
-}
-
-void print_string_bits(const uint8_t* string, size_t length) {
-    for (size_t i = 0; i < length; i++) {
-        if (i % 10 == 0) {
-            printf("\n");
-        }
-        print_bits(string[i]);
-    }
-    printf("\n");
-}
-
-uint32_t convert_endianness(uint32_t value) {
-    uint32_t converted = 0;
-    converted |= (value & 0xFF000000) >> 24;
-    converted |= (value & 0x00FF0000) >> 8;
-    converted |= (value & 0x0000FF00) << 8;
-    converted |= (value & 0x000000FF) << 24;
-    return converted;
-}
-
-void print_endian(uint32_t value) {
-    uint8_t* value_ptr = (uint8_t*)&value;
-    for (size_t i = 0; i < sizeof value; i++) {
-        printf("%02X", (uint8_t)value_ptr[i]);
-    }
-    printf("\n");
-}
-
-void write_file_bytes(const char* file_path, uint32_t* buffer, size_t buffer_length) {
-    FILE* file_ptr = fopen(file_path, "wb");
-    size_t elements_written = 0;
-
-    if (file_ptr == NULL) {
-        printf("Unable to open the file!!\n");
-        exit(EXIT_FAILURE);
-    }
-
-    for (size_t i = 0; i < buffer_length; i++) {
-        buffer[i] = convert_endianness(buffer[i]);
-    }
-
-    elements_written = fwrite(buffer, sizeof(uint32_t), buffer_length, file_ptr);
-    if (elements_written != buffer_length) {
-        printf("An error occurred while trying to write to the file!!\n");
-        exit(EXIT_FAILURE);
-    }
-
-    for (size_t i = 0; i < buffer_length; i++) {
-        buffer[i] = convert_endianness(buffer[i]);
-    }
-
-    fclose(file_ptr);
-}
-
+// Returns the size of a file in bytes (max 2GiB due to ftell()).
 size_t file_size(FILE* file_ptr) {
     size_t file_length = 0;
     fseek(file_ptr, 0, SEEK_END);
@@ -102,6 +42,8 @@ size_t file_size(FILE* file_ptr) {
     return file_length;
 }
 
+// Reads a file into a byte array passed by reference.
+// Freeing the buffer is the callers responsibility.
 void read_file_bytes(const char* file_path, uint8_t** buffer, size_t* file_length) {
     FILE* file_ptr = safe_fopen(file_path, "rb");
     size_t bytes_read = 0;
@@ -116,4 +58,4 @@ void read_file_bytes(const char* file_path, uint8_t** buffer, size_t* file_lengt
     }
 
     fclose(file_ptr);
-} */
+}
