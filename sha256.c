@@ -11,35 +11,35 @@ const uint32_t round_constants[64] = {
 	0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
-uint32_t right_rotate(uint32_t x, size_t k) {
+static uint32_t right_rotate(uint32_t x, size_t k) {
     return ((x >> k) | (x << (32 - k)));
 }
 
-uint32_t choice(uint32_t x, uint32_t y, uint32_t z) {
+static uint32_t choice(uint32_t x, uint32_t y, uint32_t z) {
     return ((x & y) ^ (~x & z));
 }
 
-uint32_t majority(uint32_t x, uint32_t y, uint32_t z) {
+static uint32_t majority(uint32_t x, uint32_t y, uint32_t z) {
     return ((x & y) ^ (x & z) ^ (y & z));
 }
 
-uint32_t delta0(uint32_t x) {
+static uint32_t delta0(uint32_t x) {
     return (right_rotate(x, 2) ^ right_rotate(x, 13) ^ right_rotate(x, 22));
 }
 
-uint32_t delta1(uint32_t x) {
+static uint32_t delta1(uint32_t x) {
     return (right_rotate(x, 6) ^ right_rotate(x, 11) ^ right_rotate(x, 25));
 }
 
-uint32_t sigma0(uint32_t x) {
+static uint32_t sigma0(uint32_t x) {
     return (right_rotate(x, 7) ^ right_rotate(x, 18) ^ (x >> 3));
 }
 
-uint32_t sigma1(uint32_t x) {
+static uint32_t sigma1(uint32_t x) {
     return (right_rotate(x, 17) ^ right_rotate(x, 19) ^ (x >> 10));
 }
 
-void sha256_padding(uint8_t* message, uint8_t** buffer, size_t message_length, size_t* buffer_length) {
+static void sha256_padding(uint8_t* message, uint8_t** buffer, size_t message_length, size_t* buffer_length) {
     size_t total_zeros = 0;
     uint64_t bit_length = 0;
 
@@ -50,11 +50,11 @@ void sha256_padding(uint8_t* message, uint8_t** buffer, size_t message_length, s
         *buffer_length = ((message_length + 9 + 64) / 64) * 64;
     }
     *buffer = safe_malloc((*buffer_length * sizeof **buffer));
-    memcpy((*buffer), message, message_length);
+    memcpy(*buffer, message, message_length);
 
     // Add the 1 bit as big-endian using the byte 0x80 = 0b10000000.
     (*buffer)[message_length] = 0x80;
-    // Compute and add the needed amount of 0 bits to reach congruence modulo 512.
+    // Compute and add the needed amount of 0 bits to reach congruence modulo 448.
     total_zeros = *buffer_length - message_length - 9;
     memset((*buffer + message_length + 1), 0x00, total_zeros);
 
@@ -65,7 +65,7 @@ void sha256_padding(uint8_t* message, uint8_t** buffer, size_t message_length, s
     }
 }
 
-void sha256_compression(const uint8_t* block, uint32_t* hash) {
+static void sha256_compression(const uint8_t* block, uint32_t* hash) {
     uint32_t a = hash[0];
     uint32_t b = hash[1];
     uint32_t c = hash[2];

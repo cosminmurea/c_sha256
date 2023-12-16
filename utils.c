@@ -2,8 +2,13 @@
 
 void* safe_malloc(size_t size) {
     void* ptr = malloc(size);
+    errno = 0;
     if (ptr == NULL) {
-        printf("Unable to allocate enough memory!!\n");
+        if (errno) {
+            perror("Error in malloc()");
+        } else {
+            fputs("Unable to allocate enough memory!!\n", stderr);
+        }
         exit(EXIT_FAILURE);
     }
     return ptr;
@@ -11,11 +16,15 @@ void* safe_malloc(size_t size) {
 
 FILE* safe_fopen(const char* file_path, const char* mode) {
     FILE* file_ptr = fopen(file_path, mode);
+    errno = 0;
     if (file_ptr == NULL) {
-        printf("Unable to open the file!!\n");
+        if (errno) {
+            perror("Error in fopen()");
+        } else {
+            fputs("Unable to open the file!!\n", stderr);
+        }
         exit(EXIT_FAILURE);
     }
-
     return file_ptr;
 }
 
@@ -33,13 +42,18 @@ uint8_t* hex_string_to_byte_array(char* hex_string, size_t length) {
     return byte_array;
 }
 
-// Returns the size of a file in bytes (max 2GiB due to ftell()).
-size_t file_size(FILE* file_ptr) {
-    size_t file_length = 0;
-    fseek(file_ptr, 0, SEEK_END);
-    file_length = ftell(file_ptr);
-    rewind(file_ptr);
-    return file_length;
+static size_t file_size(const char* file_path) {
+    struct stat file_info;
+    errno = 0;
+    if (stat(file_path, &file_info) < 0) {
+        if (errno) {
+            perror("Error in stat()");
+        } else {
+            fputs("Could not get file details!!\n", stderr);
+        }
+        exit(EXIT_FAILURE);
+    }
+    return file_info.st_size;
 }
 
 // Reads a file into a byte array passed by reference.
@@ -48,7 +62,7 @@ void read_file_bytes(const char* file_path, uint8_t** buffer, size_t* file_lengt
     FILE* file_ptr = safe_fopen(file_path, "rb");
     size_t bytes_read = 0;
 
-    *file_length = file_size(file_ptr);
+    *file_length = file_size(file_path);
     *buffer = safe_malloc(*file_length * sizeof **buffer);
 
     bytes_read = fread(*buffer, 1, *file_length, file_ptr);
